@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class ChatClientApp {
-	private static final String SERVER_ADDRESS = "192.168.1.2";
+	private static final String SERVER_ADDRESS = "192.168.1.55";
 	private static final int SERVER_PORT = 9090;
 
 	public static void main(String[] args) {
@@ -32,7 +32,7 @@ public class ChatClientApp {
 			// join 프로토콜
 			System.out.print( "닉네임>>" );
 			String nickname = scanner.nextLine();
-			printWriter.println( "join:" + nickname );
+			printWriter.println( "join " + nickname );
 			bufferedReader.readLine();
 			
 			// ChatWindow 시작

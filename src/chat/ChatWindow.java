@@ -17,9 +17,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 public class ChatWindow {
 	private Socket socket;
@@ -43,13 +46,14 @@ public class ChatWindow {
 	}
 
 	public void show() throws IOException {
+		
 		// Button
 		buttonSend.setBackground(Color.GRAY);
 		buttonSend.setForeground(Color.WHITE);
 		buttonSend.addActionListener( new ActionListener() {
 			@Override
 			public void actionPerformed( ActionEvent actionEvent ) {
-				sendMessage();
+				doMessage();
 			}
 		});
 
@@ -59,7 +63,7 @@ public class ChatWindow {
 			public void keyReleased(KeyEvent e) {
 				char keyCode = e.getKeyChar();
 				if (keyCode == KeyEvent.VK_ENTER) {
-					sendMessage();
+					doMessage();
 				}
 			}
 		});
@@ -77,7 +81,7 @@ public class ChatWindow {
 		// Frame
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				quit();
+				doQuit();
 			}
 		});
 		frame.setVisible(true);
@@ -88,7 +92,7 @@ public class ChatWindow {
 		new ChatClientReceiveThread().start();
 	}
 	
-	private void quit() {
+	private void doQuit() {
 		try {
 			printWriter.println( "quit" );
 			
@@ -102,7 +106,7 @@ public class ChatWindow {
 		}		
 	}
 	
-	private void sendMessage() {
+	private void doMessage() {
 		String message = textField.getText();
 		
 		// 빈 메세지
@@ -111,13 +115,17 @@ public class ChatWindow {
 		}
 		
 		if ( "/q".equals( message ) == true ) {
-			// /q 프로토콜 처리
-			quit();
+			doQuit();
 			return;
 		} 
 		
 		// 메시지 처리
-		printWriter.println( "message:" + message );
+		try {
+			printWriter.println( "message " + Base64.encode( message.getBytes( "UTF-8" ) ) );
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		
 		textField.setText( "" );
 		textField.requestFocus();		
 	}
@@ -127,12 +135,31 @@ public class ChatWindow {
 		public void run() {
 			try {
 				while( true ) {
-					String data = bufferedReader.readLine();
-					if( data == null ) {
+					
+					String line = bufferedReader.readLine();
+					
+					if( line == null ) {
 						ChatClientApp.log( "Disconnection by Server" );
 						break;
 					}
-					textArea.append( data + "\n" );
+					
+					String[] tokens = line.split( " " );
+					
+					String message = null;
+					
+					if( "join".equals( tokens[ 0 ]) ) {
+						message = tokens[1] + "님이 입장 하셨습니다." ;
+					} else if( "quit".equals( tokens[ 0 ] ) ) {
+						message = tokens[1] + "님이 퇴장 하셨습니다.";
+					} else if( "message".equals( tokens[ 0 ] ) ) {
+						byte[] data = Base64.decode( tokens[ 2 ] );
+						message = tokens[1] + ":" + new String( data, 0, data.length, "utf-8" );
+					} else {
+						ChatClientApp.log( "unknown command:" + tokens[ 0 ] );
+						continue;
+					}
+					
+					textArea.append( message + "\n" );
 				}
 			} catch( SocketException ex ) {
 				ChatClientApp.log( "Closed by Server" );

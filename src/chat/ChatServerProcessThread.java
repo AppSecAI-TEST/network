@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ChatServerProcessThread extends Thread {
-	private static final String PROTOCOL_DIVIDER = ":";
+	private static final String PROTOCOL_DIVIDER = " ";
 	
 	private String nickname;
 	private Socket socket;
@@ -84,12 +84,12 @@ public class ChatServerProcessThread extends Thread {
 		removePrintWriter( printWriter );
 		
 		//퇴장 메세지 브로드캐스팅
-		String data = nickname + "님이 퇴장하였습니다.";
+		String data = "quit " + nickname;
 		broadcast( data );
 	}
 	
 	private void doMessage( String message ) {
-		String data = nickname + ":" + message;
+		String data = "message " + nickname + " " + message;
 		broadcast( data );
 	}
 	
@@ -98,14 +98,14 @@ public class ChatServerProcessThread extends Thread {
 		this.nickname = nickname;
 
 		//2. 메세지 브로드캐스팅
-		String message = nickname + "님이 입장했습니다.";
-		broadcast( message );
+		String data = "join " + nickname;
+		broadcast( data );
 		
 		//3. Writer Pool 에 저장
 		addPrintWriter( printWriter );
 
 		//4. ack
-		printWriter.println( "join:ok" );
+		printWriter.println( "join ok" );
 		printWriter.flush();
 	}
 	
