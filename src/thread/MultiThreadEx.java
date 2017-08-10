@@ -1,9 +1,13 @@
 package thread;
 
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+
 public class MultiThreadEx {
 
 	public static void main(String[] args) {
-		
+		List<PrintWriter> list = new ArrayList<PrintWriter>();
 //		for( int i = 0; i <= 9; i++ ) {
 //			System.out.print( i );
 //		}
@@ -11,7 +15,7 @@ public class MultiThreadEx {
 //			System.out.print( c );
 //		}
 
-		Thread thread1 = new AlphabetThread();
+		Thread thread1 = new AlphabetThread(null, list);
 		Thread thread2 = new Thread( new DigitThread() );
 		new Thread( new Runnable() {
 			@Override
