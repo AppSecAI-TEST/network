@@ -21,8 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+import java.util.Base64;
 
 public class ChatWindow {
 	private Socket socket;
@@ -121,7 +120,7 @@ public class ChatWindow {
 		
 		// 메시지 처리
 		try {
-			printWriter.println( "message " + Base64.encode( message.getBytes( "UTF-8" ) ) );
+			printWriter.println( "message " + new String( Base64.getEncoder().encode( message.getBytes( "UTF-8" ) ) ) );
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
@@ -152,7 +151,7 @@ public class ChatWindow {
 					} else if( "quit".equals( tokens[ 0 ] ) ) {
 						message = tokens[1] + "님이 퇴장 하셨습니다.";
 					} else if( "message".equals( tokens[ 0 ] ) ) {
-						byte[] data = Base64.decode( tokens[ 2 ] );
+						byte[] data = Base64.getDecoder().decode( tokens[ 2 ] );
 						message = tokens[1] + ":" + new String( data, 0, data.length, "utf-8" );
 					} else {
 						ChatClientApp.log( "unknown command:" + tokens[ 0 ] );
