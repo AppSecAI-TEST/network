@@ -1,31 +1,55 @@
 package chat;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class ChatClientApp {
+	private static final String SERVER_ADDRESS = "192.168.1.2";
+	private static final int SERVER_PORT = 9090;
 
 	public static void main(String[] args) {
-		String name = null;
-		Scanner scanner = new Scanner(System.in);
+		Scanner scanner = null;
+		Socket socket = null;
+		try {
+			// 키보드 연결
+			scanner = new Scanner( System.in );
 
-		while( true ) {
+			// socket 생성
+			socket = new Socket();
+
+			// 연결
+			socket.connect( new InetSocketAddress( SERVER_ADDRESS, SERVER_PORT ) );
+
+			// reader/ writer 생성
+			BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( socket.getInputStream(), StandardCharsets.UTF_8 ) );
+			PrintWriter printWriter = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), StandardCharsets.UTF_8 ), true );
+
+			// join 프로토콜
+			System.out.print( "닉네임>>" );
+			String nickname = scanner.nextLine();
+			printWriter.println( "join:" + nickname );
+			bufferedReader.readLine();
 			
-			System.out.println("대화명을 입력하세요.");
-			System.out.print(">>> ");
-			name = scanner.nextLine();
-			
-			if (name.isEmpty() == false ) {
-				break;
+			// ChatWindow 시작
+			new ChatWindow( socket ).show();
+
+		} catch (Exception ex) {
+			log( "error:" + ex );
+		} finally {
+			// 자원정리
+			if( scanner != null ) {
+				scanner.close();
 			}
-			
-			System.out.println("대화명은 한글자 이상 입력해야 합니다.\n");
-		}
-		
-		scanner.close();
-
-		// --> "JOIN 둘리\r\n"
-		// <-- "JOIN OK\r\n"
-		
-		new ChatWindow(name).show();
+		}		
 	}
+	
+	public static void log( String log ) {
+		System.out.println( "[chat-client] " + log );
+	}	
 
 }

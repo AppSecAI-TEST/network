@@ -14,11 +14,17 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 
 public class ChatWindow {
-	private PrintWriter pw;
-	private BufferedReader br;
+	private Socket socket;
+	private PrintWriter printWriter;
+	private BufferedReader bufferedReader;
 	
 	private Frame frame;
 	private Panel pannel;
@@ -26,15 +32,17 @@ public class ChatWindow {
 	private TextField textField;
 	private TextArea textArea;
 
-	public ChatWindow(String name) {
-		frame = new Frame(name + "채팅방");
+	public ChatWindow( Socket socket ) {
+		this.socket = socket;
+		
+		frame = new Frame( "채팅방" );
 		pannel = new Panel();
-		buttonSend = new Button("Send");
+		buttonSend = new Button( "Send" );
 		textField = new TextField();
-		textArea = new TextArea(30, 80);
+		textArea = new TextArea( 30, 80 );
 	}
 
-	public void show() {
+	public void show() throws IOException {
 		// Button
 		buttonSend.setBackground(Color.GRAY);
 		buttonSend.setForeground(Color.WHITE);
@@ -44,7 +52,6 @@ public class ChatWindow {
 				sendMessage();
 			}
 		});
-		
 
 		// Textfield
 		textField.setColumns(80);
@@ -70,54 +77,68 @@ public class ChatWindow {
 		// Frame
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				System.exit(0);
+				quit();
 			}
 		});
 		frame.setVisible(true);
 		frame.pack();
 		
-		//
-		// new ChatClientReceiveThread().start();
-		new Thread( new Runnable() {
-			@Override
-			public void run() {
-				String line = null;
-				try {
-					line = br.readLine();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				textArea.append( "둘리:" + line );
-				textArea.append("\n");				
+		bufferedReader = new BufferedReader( new InputStreamReader( socket.getInputStream(), StandardCharsets.UTF_8 ) );
+		printWriter = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), StandardCharsets.UTF_8 ), true );
+		new ChatClientReceiveThread().start();
+	}
+	
+	private void quit() {
+		try {
+			printWriter.println( "quit" );
+			
+			if( socket != null && socket.isClosed() == false) {
+				socket.close();
 			}
-		}).start();
+			
+			System.exit(0);
+		} catch( IOException ex ) {
+			ChatClientApp.log( "error:" + ex );
+		}		
 	}
 	
 	private void sendMessage() {
 		String message = textField.getText();
 		
+		// 빈 메세지
+		if( "".equals( message ) ) {
+			return;
+		}
 		
-		//test code
-		// 리시브쓰레드에서 받아서 
-		textArea.append( "둘리:" + message );
-		textArea.append("\n");
-
-		textField.setText("");
+		if ( "/q".equals( message ) == true ) {
+			// /q 프로토콜 처리
+			quit();
+			return;
+		} 
+		
+		// 메시지 처리
+		printWriter.println( "message:" + message );
+		textField.setText( "" );
 		textField.requestFocus();		
 	}
 	
-	public class ChatClientReceiveThread extends Thread {
-
-
+	private class ChatClientReceiveThread extends Thread {
 		@Override
 		public void run() {
-			while( true ) {
-				String line = br.readLine();
-				textArea.append( "둘리:" + line );
-				textArea.append("\n");
+			try {
+				while( true ) {
+					String data = bufferedReader.readLine();
+					if( data == null ) {
+						ChatClientApp.log( "Disconnection by Server" );
+						break;
+					}
+					textArea.append( data + "\n" );
+				}
+			} catch( SocketException ex ) {
+				ChatClientApp.log( "Closed by Server" );
+			} catch( IOException ex ) {
+				ChatClientApp.log( "error:" + ex );
 			}
 		}
-
 	}	
 }
