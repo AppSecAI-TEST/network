@@ -22,6 +22,9 @@ public class ChatServer {
 			//1. 서버소켓 생성
 			serverSocket = new ServerSocket();
 			
+			//1-1. set option SO_REUSEADDR ( 종료후 빠리 바인딩 하기 위해서 )
+			serverSocket.setReuseAddress( true );
+			
 			//2. binding
 			InetAddress inetAddress = InetAddress.getLocalHost();
 			String hostAddress = inetAddress.getHostAddress();

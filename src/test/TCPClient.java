@@ -3,8 +3,10 @@ package test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 public class TCPClient {
 	private static final String SERVER_IP = "192.168.1.2";
@@ -18,6 +20,25 @@ public class TCPClient {
 			// 1. Socket 생성
 			socket = new Socket();
 	
+			// 1-1. Socket Buffer Size 확인
+			int receiveBufferSize = socket.getReceiveBufferSize();
+			int sendBufferSize = socket.getSendBufferSize();
+			System.out.println( receiveBufferSize + ":" + sendBufferSize );
+			
+			// 1-2 Socket Buffer Size 변경
+			socket.setReceiveBufferSize( 10 * 1024 );
+			socket.setSendBufferSize( 10 * 1024 );
+			
+			receiveBufferSize = socket.getReceiveBufferSize();
+			sendBufferSize = socket.getSendBufferSize();
+			System.out.println( receiveBufferSize + ":" + sendBufferSize );
+			
+			// 1-3 SO_NODELAY ( Nagle Algorithm Off)
+			socket.setTcpNoDelay( true );
+			
+			// 1-4 SO_TIMEOUT
+			socket.setSoTimeout( 3000 );
+			
 			// 2. 서버 연결 
 			socket.connect( new InetSocketAddress( SERVER_IP, SERVER_PORT ) );
 		
@@ -39,6 +60,10 @@ public class TCPClient {
 			data = new String( buffer, 0, readByteCount, "utf-8" );
 			System.out.println( "[client] received:" + data );
 			
+		} catch( ConnectException e ) {
+			System.out.println( "[client] not connect" );
+	    } catch( SocketTimeoutException e ) {
+			System.out.println( "[client] read timeout" );
 		} catch( IOException e ) {
 			e.printStackTrace();
 		} finally {
